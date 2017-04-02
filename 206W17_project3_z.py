@@ -58,7 +58,7 @@ def get_user_tweets(input_string):
 		returnedList = CACHE_DICTION[input_string]
 	else: 
 		print("getting new data from the web for", input_string)
-		search_results = api.user_timeline(input_string)
+		search_results = api.user_timeline(input_string, count = 500, page = 1)
 		toString = json.dumps(search_results)
 		toJsonAgain = json.loads(toString)
 		returnedList = toJsonAgain
@@ -112,12 +112,12 @@ cur = conn.cursor()
 
 cur.execute("DROP TABLE IF EXISTS Tweets")
 table_spec1 = "CREATE TABLE IF NOT EXISTS "
-table_spec1 += "Tweets (tweet_id INTEGER PRIMARY KEY, text TEXT, user_id INTEGER, time_posted TIMESTAMP, retweets INTEGER)"
+table_spec1 += "Tweets (tweet_id INTEGER PRIMARY KEY, text TEXT, user_id TEXT, time_posted TIMESTAMP, retweets INTEGER)"
 cur.execute(table_spec1)
 
 cur.execute("DROP TABLE IF EXISTS Users")
 table_spec2 = 'CREATE TABLE IF NOT EXISTS '
-table_spec2 += "Users (user_id INTEGER PRIMARY KEY, screen_name TEXT, num_favs INTEGER, description TEXT)"
+table_spec2 += "Users (user_id TEXT PRIMARY KEY, screen_name TEXT, num_favs INTEGER, description TEXT)"
 cur.execute(table_spec2)
 
 statement = 'DELETE FROM Tweets'
@@ -136,19 +136,20 @@ retweetlist = []
 numfavslist = []
 descriptionlist = []
 user_idlist = []
+user_idlist2 = []
 
 #print (umich_tweets)
 
-for i in umich_tweets:
-	tweetidlist.append(i['id'])
-	screennamelist.append(i['user']['screen_name'])
-	timepostedlist.append(i['created_at'])
-	tweettextlist.append(i['text'])
-	retweetlist.append(i['retweet_count'])
-	#print (json.dumps(i, indent=4, sort_keys=True))
-	numfavslist.append(i['user']['favourites_count'])
-	descriptionlist.append(i['user']['description'])
-	user_idlist.append(i['user']['id'])
+# for x in user_idlist2:
+# 	favs = get_user_tweets(x)
+# 	for z in favs:
+# 		numfavslist.append(z['user']['favourites_count'])
+# 		descriptionlist.append(z['user']['description'])
+
+	# for z in favs:
+	# 	numfavslist.append(z['user']['favourites_count'])
+	# 	descriptionlist.append(z['user']['description'])
+
 
 # print (tweetidlist)
 # print (screennamelist)
@@ -159,11 +160,49 @@ for i in umich_tweets:
 # print (descriptionlist)
 # print (user_idlist)
 
-tups_Tweets = list(zip(tweetidlist, tweettextlist, user_idlist, timepostedlist, retweetlist))
-tups_Users = list(zip(user_idlist, screennamelist, numfavslist, descriptionlist))
+#print (len(umich_tweets))
 
-print (tups_Tweets)
-print (tups_Users)
+for i in umich_tweets:
+	tweetidlist.append(i['id'])
+	for x in i['entities']['user_mentions']:
+		screennamelist.append(x['screen_name'])
+		user_idlist2.append(x['id'])
+	timepostedlist.append(i['created_at'])
+	tweettextlist.append(i['text'])
+	retweetlist.append(i['retweet_count'])
+
+USC_tweets = get_user_tweets('USC')
+
+
+for i in USC_tweets[0:50]:
+	tweetidlist.append(i['id'])
+	for x in i['entities']['user_mentions']:
+		screennamelist.append(x['screen_name'])
+		user_idlist2.append(x['id'])
+	timepostedlist.append(i['created_at'])
+	tweettextlist.append(i['text'])
+	retweetlist.append(i['retweet_count'])
+	#print (json.dumps(i, indent=4, sort_keys=True))
+	#numfavslist.append(i['user']['favourites_count'])
+	#descriptionlist.append(i['user']['description'])
+	#user_idlist.append(i['user']['id'])
+	#user_idlist2.append(i['retweeted_status']['user_mentions']['id'])
+
+# print (len(tweetidlist))
+# print (len(user_idlist2))
+
+for x in screennamelist:
+	userstuff = api.get_user(x)
+	#print (json.dumps(userstuff, indent=4, sort_keys=True))
+	numfavslist.append(userstuff['favourites_count'])
+	descriptionlist.append(userstuff['description'])
+
+tups_Tweets = list(zip(tweetidlist, tweettextlist, user_idlist2, timepostedlist, retweetlist))
+tups_Users = list(zip(user_idlist2, screennamelist, numfavslist, descriptionlist))
+
+# print (tups_Tweets)
+# print (len(tups_Tweets))
+# # print (tups_Users)
 
 
 
@@ -174,32 +213,68 @@ for t in tups_Tweets:
 conn.commit()
 
 
-statement2 = 'INSERT INTO Users VALUES (?, ?, ?, ?)'
+statement2 = 'INSERT OR IGNORE INTO Users VALUES (?, ?, ?, ?)'
 
 for x in tups_Users:
 	cur.execute(statement2, x)
 conn.commit()
+
+
+# cur.execute('SELECT user_id FROM Tweets')
+# result = cur.fetchall()
+
+# #print (result[1][0])
 ## Task 3 - Making queries, saving data, fetching data
 
 # All of the following sub-tasks require writing SQL statements and executing them using Python.
 
 # Make a query to select all of the records in the Users database. Save the list of tuples in a variable called users_info.
 
+query = 'SELECT * FROM Users'
+users_info = list(cur.execute(query))
+
 # Make a query to select all of the user screen names from the database. Save a resulting list of strings (NOT tuples, the strings inside them!) in the variable screen_names. HINT: a list comprehension will make this easier to complete!
 
+query = 'SELECT screen_name FROM Users'
+x = cur.execute(query)
+#print (x)
+screenlist = []
+for z in x:
+	#print (z)
+	screenlist.append(z[0])
+
+#print (screenlist)
+screen_names = screenlist
 
 # Make a query to select all of the tweets (full rows of tweet information) that have been retweeted more than 25 times. Save the result (a list of tuples, or an empty list) in a variable called more_than_25_rts.
 
-
+query = 'SELECT * FROM Tweets WHERE retweets > 25'
+more_than_25_rts = list(cur.execute(query))
+#print (more_than_25_rts)
 
 # Make a query to select all the descriptions (descriptions only) of the users who have favorited more than 25 tweets. Access all those strings, and save them in a variable called descriptions_fav_users, which should ultimately be a list of strings.
 
+for x in more_than_25_rts:
+	query = 'SELECT description FROM Users'
+
+ff = cur.execute(query)
+descriptions = []
+
+for x in ff:
+	#print (x)
+	descriptions.append(x[0])
+
+descriptions_fav_users = descriptions
+#print(descriptions_fav_users)
 
 
 # Make a query using an INNER JOIN to get a list of tuples with 2 elements in each tuple: the user screenname and the text of the tweet -- for each tweet that has been retweeted more than 50 times. Save the resulting list of tuples in a variable called joined_result.
 
+#query = 'SELECT screen_name FROM User INNER JOIN Tweet.text'
 
-
+query = 'SELECT screen_name, text FROM Users INNER JOIN Tweets on Users.user_id = Tweets.user_id WHERE Tweets.retweets > 25'
+#r = cur.execute(query)
+joined_result = list(cur.execute(query))
 
 ## Task 4 - Manipulating data with comprehensions & libraries
 
