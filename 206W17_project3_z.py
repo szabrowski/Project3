@@ -248,7 +248,7 @@ screen_names = screenlist
 
 # Make a query to select all of the tweets (full rows of tweet information) that have been retweeted more than 25 times. Save the result (a list of tuples, or an empty list) in a variable called more_than_25_rts.
 
-query = 'SELECT * FROM Tweets WHERE retweets > 25'
+query = 'SELECT * FROM Tweets WHERE retweets > 25'  # WORKS but because there is only 1 tweet with over 25 retweets, it produces an false negative test
 more_than_25_rts = list(cur.execute(query))
 #print (more_than_25_rts)
 
@@ -279,10 +279,71 @@ joined_result = list(cur.execute(query))
 ## Task 4 - Manipulating data with comprehensions & libraries
 
 ## Use a set comprehension to get a set of all words (combinations of characters separated by whitespace) among the descriptions in the descriptions_fav_users list. Save the resulting set in a variable called description_words.
+lst_words = []
 
+for x in descriptions_fav_users:
+	#print (x)
+	z = x.split(' ')
+	#print (z)
+	lst_words.append(z)
+
+# p = [x.split(' ') for x in descriptions_fav_users]
+# print (p)
+# z = [x for x in p]
+# print (z)
+ffff = []
+for c in lst_words:
+	ffff.append(c)
+
+#print (ffff)
+
+# for x in ffff:
+# 	for l in x:
+# 		print (l)
+#print (lst_words)
+# z = []
+# for x in descriptions_fav_users:
+# 	f = x.split(" ")
+# 	z.append(f)
+
+
+# print (str(z))
+
+# description_words = {x for x in z}
+# print (description_words)
+
+description_words = {x for y in ffff for x in y}
 
 
 ## Use a Counter in the collections library to find the most common character among all of the descriptions in the descriptions_fav_users list. Save that most common character in a variable called most_common_char. Break any tie alphabetically (but using a Counter will do a lot of work for you...).
+
+unique_chars = {}
+
+
+lst_characters = []
+
+for x in description_words:
+	#print (x)
+	for y in x:
+		#print (y)
+		lst_characters.append(y)
+#print (lst_characters)
+
+
+
+for x in lst_characters:
+	if x in unique_chars:
+		unique_chars[x] += 1
+	else:
+		unique_chars[x] = 1
+
+#print (unique_chars)
+
+c = collections.Counter(unique_chars).most_common(1)
+
+for x in c:
+	most_common_char = x[0]
+	#print (most_common_char)
 
 
 
@@ -290,7 +351,23 @@ joined_result = list(cur.execute(query))
 # Write code to create a dictionary whose keys are Twitter screen names and whose associated values are lists of tweet texts that that user posted. You may need to make additional queries to your database! To do this, you can use, and must use at least one of: the DefaultDict container in the collections library, a dictionary comprehension, list comprehension(s). Y
 # You should save the final dictionary in a variable called twitter_info_diction.
 
+query = 'SELECT screen_name, text FROM Users INNER JOIN Tweets on Users.user_id=Tweets.user_id'
+m = list(cur.execute(query))
+#print (m)
+# for s in m:
+# 	print (s)
+# dicti = {}
 
+# for x in m:
+# 	if x not in dicti:
+# 		dicti[x[0]] = x[1]
+# 	else:
+# 		dicti[x[0]] += x[1]
+
+# print (dicti)
+
+twitter_info_diction = {x[0]:x[1] for x in m}
+print (twitter_info_diction)
 
 ### IMPORTANT: MAKE SURE TO CLOSE YOUR DATABASE CONNECTION AT THE END OF THE FILE HERE SO YOU DO NOT LOCK YOUR DATABASE (it's fixable, but it's a pain). ###
 
